@@ -13,26 +13,9 @@ on:
       - master
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: 'go.mod'
-
-      - name: Build
-        run: go build
-
-  docker-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: make docker-build
-
+ 
+    
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -93,3 +76,26 @@ jobs:
 
       - name: Unit tests
         run: go test ./...
+   docker-build:
+    runs-on: self-hosted
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+          
+      - uses: docker/setup-buildx-action@v3.0.0
+      
+      - name: Build Docker image
+        run: make docker-build
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.ACR_TOKEN }}" | docker login -u "${{ secrets.ACR_TOKEN_NAME }}" --password-stdin
+
+      - name: Tag Docker image
+        run: docker tag 5gc-nssf:0.0.1-dev bond00701011990722/nssf/
+
+      - name: Push Docker image to Docker Hub
+        run: docker push bond00701011990722/nssf/
